@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,6 +41,7 @@ class AppController extends GetxController {
       uploadProgress = '0'.obs,
       currentSpeed = '0'.obs;
   RxInt historyDays = 5.obs;
+  Rx<TextEditingController> historyDay = TextEditingController().obs;
 
   Rx<InfoStat> dailyStat = InfoStat(date: DateTime.now()).obs;
 
@@ -107,9 +107,12 @@ class AppController extends GetxController {
     try {
       debugPrint('>> checking network usage permission');
       UsageStats.grantUsagePermission(); // network usage log permission
+
       if (networkInfosMap.isEmpty || startDay != null) {
         fetchingUsageData(true);
         historyDays(startDay);
+        // debugPrint('>> day count: ${startDay}');
+        networkInfosMap.clear();
         for (var i = 0; i < historyDays.value; i++) {
           DateTime startDate = DateTime.now().subtract(Duration(days: i));
 
@@ -216,23 +219,27 @@ class AppController extends GetxController {
   }
 
   void startBackgroundService() {
-    if (SecureStorage().readKey(key: backgroundPerm) != 'true') {
-      initializeBackgroundService();
-    } else {
-      flutterBackgroundService.startService();
+    if (!backgroundState.value) {
+      if (SecureStorage().readKey(key: backgroundPerm) != 'true') {
+        initializeBackgroundService();
+      } else {
+        flutterBackgroundService.startService();
+      }
+      SecureStorage().writeKey(key: backgroundEnabled, value: true.toString());
+      backgroundState(true);
     }
-    SecureStorage().writeKey(key: backgroundEnabled, value: true.toString());
-    backgroundState(true);
   }
 
   void stopBackgroundService() {
-    if (SecureStorage().readKey(key: backgroundPerm) == 'true') {
-      flutterBackgroundService.invoke("stop");
+    if (backgroundState.value) {
+      if (SecureStorage().readKey(key: backgroundPerm) == 'true') {
+        flutterBackgroundService.invoke("stop");
+      }
+      speedCheck.cancel();
+      NotificationService.close();
+      SecureStorage().clear(key: backgroundEnabled);
+      backgroundState(false);
     }
-    speedCheck.cancel();
-    NotificationService.close();
-    SecureStorage().clear(key: backgroundEnabled);
-    backgroundState(false);
   }
 
   Future<bool> getBackgroundPermission() async {

@@ -1,6 +1,9 @@
 import 'package:accordion/accordion.dart';
 import 'package:accordion/controllers.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:network_info/utils/background_bubbles.dart';
 import '../controller/app_controller.dart';
@@ -45,25 +48,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         style: const TextStyle(fontSize: 18),
                       ),
                     )),
-                    IconButton(
-                        onPressed: () {
-                          appController.startBackgroundService();
-                        },
-                        icon: const Icon(
-                          Icons.play_arrow,
-                          size: 30,
-                        )),
                     const SizedBox(
                       width: 5,
                     ),
-                    IconButton(
-                        onPressed: () {
-                          appController.stopBackgroundService();
-                        },
-                        icon: const Icon(
-                          Icons.pause,
-                          size: 30,
-                        )),
+                    Obx(() => !appController.backgroundState.value
+                        ? IconButton(
+                            onPressed: () {
+                              appController.startBackgroundService();
+                            },
+                            icon: const Icon(
+                              Icons.play_arrow,
+                              size: 30,
+                              color: Colors.deepPurple,
+                            ),
+                          )
+                        : IconButton(
+                            onPressed: () {
+                              appController.stopBackgroundService();
+                            },
+                            icon: const Icon(
+                              Icons.pause,
+                              size: 30,
+                              color: Colors.deepPurple,
+                            ),
+                          )),
                   ],
                 ),
                 const SizedBox(
@@ -80,6 +88,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   'History of Network Usage:',
                   style: TextStyle(fontSize: 18),
                 ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        expands: false,
+                        decoration: InputDecoration(
+                            suffix: IconButton(
+                                onPressed: () {}, icon: const Icon(Icons.done)),
+                            labelText: 'Day count for past records',
+                            hintText: '1-15'),
+                        controller: appController.historyDay.value,
+                        validator: (val) {
+                          if (val!.trim().isEmpty) {
+                            return "Please enter the number of day(s) for history!";
+                          } else if (!val.isNumericOnly) {
+                            return "Please enter a valid number!";
+                          } else if (int.parse(val) > 15) {
+                            return "Max 15 days record can be accessed!";
+                          }
+                          return null;
+                        },
+                        onFieldSubmitted: (day) {
+                          appController.networkUsageStat(
+                              startDay: int.parse(day));
+                        },
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        inputFormatters: [
+                          FilteringTextInputFormatter(RegExp(r'(^\d*\.?\d*)'),
+                              allow: true)
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
                 Obx(
                   () => (appController.fetchingUsageData.value)
                       ? const Center(
@@ -95,10 +144,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               physics: const NeverScrollableScrollPhysics(),
                               shrinkWrap: true,
                               // itemCount: 1,
-                              itemCount:
-                                  appController.networkInfosMap.length,
-                              itemBuilder:
-                                  (BuildContext context, int index) {
+                              itemCount: appController.networkInfosMap.length,
+                              itemBuilder: (BuildContext context, int index) {
                                 DateTime key = appController
                                     .networkInfosMap.keys
                                     .elementAt(index);
@@ -107,9 +154,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     contentHorizontalPadding: 10,
                                     scaleWhenAnimating: true,
                                     openAndCloseAnimation: true,
-                                    headerPadding:
-                                        const EdgeInsets.symmetric(
-                                            vertical: 5, horizontal: 5),
+                                    headerPadding: const EdgeInsets.symmetric(
+                                        vertical: 5, horizontal: 5),
                                     sectionOpeningHapticFeedback:
                                         SectionHapticFeedback.heavy,
                                     sectionClosingHapticFeedback:
@@ -134,11 +180,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                                 const NeverScrollableScrollPhysics(),
                                             shrinkWrap: true,
                                             itemCount: appController
-                                                .networkInfosMap[key]!
-                                                .length,
-                                            itemBuilder:
-                                                (BuildContext context,
-                                                    int statIndex) {
+                                                .networkInfosMap[key]!.length,
+                                            itemBuilder: (BuildContext context,
+                                                int statIndex) {
                                               return ListTile(
                                                 title: Text(appController
                                                     .networkInfosMap[key]![
@@ -146,8 +190,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                                     .packageName!),
                                                 subtitle: Column(
                                                   crossAxisAlignment:
-                                                      CrossAxisAlignment
-                                                          .start,
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                         'Received: ${appController.networkInfosMap[key]![statIndex].rxTotalBytes!} bytes.'),
