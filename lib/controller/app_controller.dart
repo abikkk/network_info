@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_internet_speed_test/flutter_internet_speed_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:internet_speed_meter/internet_speed_meter.dart';
 import 'package:network_info/controller/secure_storage_controller.dart';
@@ -15,6 +16,7 @@ import 'package:usage_stats/usage_stats.dart';
 import 'notification_handler.dart';
 
 class AppController extends GetxController {
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
   FlutterBackgroundService flutterBackgroundService =
       FlutterBackgroundService();
   FlutterBackgroundAndroidConfig androidConfig =
@@ -40,7 +42,7 @@ class AppController extends GetxController {
   RxString downloadProgress = '0'.obs,
       uploadProgress = '0'.obs,
       currentSpeed = '0'.obs;
-  RxInt historyDays = 5.obs;
+  RxInt historyDays = 1.obs;
   Rx<TextEditingController> historyDay = TextEditingController().obs;
 
   Rx<InfoStat> dailyStat = InfoStat(date: DateTime.now()).obs;
@@ -166,27 +168,26 @@ class AppController extends GetxController {
   }
 
   // continuous speed data
-  initializeBackgroundService() async {
+  initializeBackgroundService({bool restart = false}) async {
     try {
-      if (SecureStorage().readKey(key: backgroundPerm) != 'true') {
+      if ((await storage.read(key: backgroundPerm)).toString() != 'true') {
         // back ground running permissions
         await getBackgroundPermission().then((hasPermissions) async {
           if (hasPermissions) {
             await flutterBackgroundService.configure(
               androidConfiguration: AndroidConfiguration(
-                onStart: speedText(),
+                onStart: speedTest(),
                 autoStart: true,
                 autoStartOnBoot: true,
                 isForegroundMode: true,
               ),
               iosConfiguration: IosConfiguration(
                 autoStart: true,
-                onForeground: speedText(),
-                onBackground: speedText(),
+                onForeground: speedTest(),
+                onBackground: speedTest(),
               ),
             );
-
-            startBackgroundService();
+            if (restart) startBackgroundService();
           } else {
             debugPrint('>> does not have permission!!!');
           }
@@ -194,51 +195,54 @@ class AppController extends GetxController {
       } else {
         await flutterBackgroundService.configure(
           androidConfiguration: AndroidConfiguration(
-            onStart: speedText(),
+            onStart: speedTest(),
             autoStart: true,
             autoStartOnBoot: true,
             isForegroundMode: true,
           ),
           iosConfiguration: IosConfiguration(
             autoStart: true,
-            onForeground: speedText(),
-            onBackground: speedText(),
+            onForeground: speedTest(),
+            onBackground: speedTest(),
           ),
         );
 
-        startBackgroundService();
+        if (restart) startBackgroundService();
       }
     } on PlatformException {
-      // disable background service
-      // await FlutterBackground.disableBackgroundExecution();
       currentSpeed.value = 'Failed to get currentSpeed.';
     } catch (e) {
       debugPrint('>> error here: ${e.toString()}');
-      // await FlutterBackground.disableBackgroundExecution();
     }
   }
 
-  void startBackgroundService() {
+  Future<void> startBackgroundService() async {
     if (!backgroundState.value) {
-      if (SecureStorage().readKey(key: backgroundPerm) != 'true') {
-        initializeBackgroundService();
+      // if ((await storage.read(key: backgroundPerm)).toString() != 'true') {
+      //   initializeBackgroundService(restart: true);
+      // } else
+      if (await flutterBackgroundService.isRunning()) {
+        debugPrint('>> background service already present');
       } else {
         flutterBackgroundService.startService();
       }
-      SecureStorage().writeKey(key: backgroundEnabled, value: true.toString());
+      speedTest();
+      storage.write(key: backgroundEnabled, value: true.toString());
       backgroundState(true);
     }
   }
 
-  void stopBackgroundService() {
+  Future<void> stopBackgroundService() async {
     if (backgroundState.value) {
-      if (SecureStorage().readKey(key: backgroundPerm) == 'true') {
+      if ((await storage.read(key: backgroundPerm)).toString() == 'true') {
+        debugPrint('>> closing background service');
         flutterBackgroundService.invoke("stop");
+
+        speedCheck.cancel();
+        NotificationService.close();
+        storage.delete(key: backgroundEnabled);
+        backgroundState(false);
       }
-      speedCheck.cancel();
-      NotificationService.close();
-      SecureStorage().clear(key: backgroundEnabled);
-      backgroundState(false);
     }
   }
 
@@ -247,7 +251,7 @@ class AppController extends GetxController {
     bool perm = await FlutterBackground
         .hasPermissions; // back ground services permission
 
-    SecureStorage().writeKey(key: backgroundPerm, value: perm.toString());
+    storage.write(key: backgroundPerm, value: perm.toString());
     if (perm) {
       return perm;
     } else {
@@ -259,7 +263,7 @@ class AppController extends GetxController {
     }
   }
 
-  speedText() {
+  speedTest() {
     debugPrint('>> listener for network speed value changes');
     speedCheck =
         internetSpeedMeterPlugin.getCurrentInternetSpeed().listen((event) {

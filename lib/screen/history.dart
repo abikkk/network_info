@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:network_info/utils/background_bubbles.dart';
 import '../controller/app_controller.dart';
 
 class HistoryScreen extends StatefulWidget {

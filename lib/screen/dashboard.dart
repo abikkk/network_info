@@ -1,8 +1,10 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:network_info/controller/app_controller.dart';
+import 'package:network_info/controller/notification_handler.dart';
 import 'package:network_info/screen/history.dart';
 import '../model/notification.dart' as model;
 import '../utils/background_bubbles.dart';
@@ -35,6 +37,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onPressed: () => Get.to(() => const HistoryScreen()),
               icon: const Icon(Icons.settings))
         ],
+      ),
+      floatingActionButton: IconButton(
+        onPressed: () {
+          appController.initializeBackgroundService();
+        },
+        icon: const Icon(Icons.refresh),
       ),
       body: SingleChildScrollView(
         child: Stack(
@@ -233,6 +241,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
+                  // GestureDetector(
+                  //   onTap: () async {
+                  //     debugPrint('>> sendin notifi');
+                  //     model.NotificationModel notificationModel =
+                  //         model.NotificationModel(
+                  //             title: 'Network Info',
+                  //             body: 'Download Rate: 100',
+                  //             payload: '100');
+                  //     NotificationService.display(
+                  //         notificationModel: notificationModel);
+                  //   },
+                  //   child: Container(
+                  //       height: 50,
+                  //       width: 120,
+                  //       decoration: const BoxDecoration(
+                  //         color: Colors.deepPurple,
+                  //       ),
+                  //       child: const Center(
+                  //         child: Text(
+                  //           'TEST',
+                  //           style: TextStyle(color: Colors.white),
+                  //         ),
+                  //       )),
+                  // )
                 ],
               ),
             ),
