@@ -384,6 +384,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.11.0"
+  network_usage:
+    dependency: "direct main"
+    description:
+      name: network_usage
+      sha256: fa5d2400b5f69ff64099cf49826f9d4541f8b9a6293f853189da6dea64c0da00
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   nm:
     dependency: transitive
     description:

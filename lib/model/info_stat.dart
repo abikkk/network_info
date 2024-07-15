@@ -1,25 +1,32 @@
+import 'package:network_info/model/network_usage.dart';
+
 class InfoStat {
   late String isp, ip, unit, asn;
-  late DateTime date;
-  late double upSpeed, downSpeed;
+  late NetworkUsage networkUsage;
 
-  InfoStat(
-      {this.isp = 'N/A',
-      this.ip = '',
-      this.asn = 'N/A',
-      required this.date,
-      this.unit = 'Mbps',
-      this.upSpeed = 0.0,
-      this.downSpeed = 0.0});
+  // late DateTime date;
+  // late double upSpeed, downSpeed;
+
+  InfoStat({
+    this.isp = 'N/A',
+    this.ip = '',
+    this.asn = 'N/A',
+    this.unit = 'Mbps',
+    required this.networkUsage,
+    // required this.date,
+    // this.upSpeed = 0.0,
+    // this.downSpeed = 0.0,
+  });
 
   InfoStat.fromJson(Map json) {
     isp = json['isp'];
     ip = json['ip'];
     asn = json['asn'];
     unit = json['unit'];
-    date = json['date'];
-    upSpeed = json['upSpeed'];
-    downSpeed = json['downSpeed'];
+    networkUsage = json['networkUsage'];
+    // date = json['date'];
+    // upSpeed = json['upSpeed'];
+    // downSpeed = json['downSpeed'];
   }
 
   Map toJson() {
@@ -28,9 +35,10 @@ class InfoStat {
       'ip': ip,
       'asn': asn,
       'unit': unit,
-      'date': date,
-      'upSpeed': upSpeed,
-      'downSpeed': downSpeed
+      'networkUsage': networkUsage
+      // 'date': date,
+      // 'upSpeed': upSpeed,
+      // 'downSpeed': downSpeed
     };
     return infoStat;
   }
